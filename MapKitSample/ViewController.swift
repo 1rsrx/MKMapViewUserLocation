@@ -90,6 +90,7 @@ extension ViewController: CLLocationManagerDelegate {
         currentLocation = location.coordinate
     }
     
+    // 方向が更新されたとき
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         guard let userLocationAnnotationView = userLocationAnnotationView else { return }
         let angle = CGFloat(newHeading.trueHeading) * .pi / 180
@@ -99,9 +100,29 @@ extension ViewController: CLLocationManagerDelegate {
     
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
-        if status == .authorizedWhenInUse {
+        switch status {
+        case .notDetermined, .denied:
+            break
+        case .authorizedAlways, .authorizedWhenInUse:
             manager.startUpdatingLocation()
             manager.startUpdatingHeading()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [self] in
+                mapView.setCenter(currentLocation, animated: false)
+            }
+            
+        default:
+            break
         }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print(error.localizedDescription)
+        
+        let alert = UIAlertController(title: "位置情報取得に失敗しました。再起動してください", message: "\(error.localizedDescription)", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "ok", style: .default)
+        alert.addAction(okAction)
+        
+        self.present(alert, animated: true)
     }
 }
